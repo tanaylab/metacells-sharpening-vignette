@@ -11,40 +11,27 @@ When the packages are released this document will get considerably shorter.
 
 ## Which of these to use
 
-To *read* the vignette, install nothing: the released HTML and PDF are linked from the `README`. You install this to
-run the pipeline on your own data, which all three options do equally well.
-
-What separates them is how much of your machine they isolate you from, and what you give up for that:
-
 | | [Local](#local-install) | [Conda](#conda-install) | [Docker](#docker) |
 |---|---|---|---|
-| isolates Python and Julia packages | ✔ | ✔ | ✔ |
-| isolates the C and C++ runtime | | ✔ | ✔ |
-| isolates the rest of the operating system | | | ✔ |
-| pins the version of Julia itself | | ✔ | ✔ |
-| your other tools are usable alongside it | ✔ | ✔ | only through the container |
-| the package sources can be edited in place | ✔ | ✔ | rebuild or mount them |
-| needs privileges you may not have on a shared machine | | | ✔ |
+| you want to read the vignette | ✔ | ✔ | ✔ |
+| you want to run it on your own data | ✔ | ✔ | ✔ |
+| you want to modify or debug the code | ✔ | ✔ | |
+| you already manage your environments with `conda` | | ✔ | |
+| you would rather install nothing at all | | | ✔ |
+| number of steps | most | fewer | fewest |
 
-**[Local install](#local-install)** isolates the packages and nothing else: a virtual environment for Python, a project
-of its own for Julia, but your system's C library and C++ runtime underneath. That last part is a real exposure rather
-than a theoretical one — on RHEL 8 the system `libstdc++` is too old for Julia 1.12, and this install works only
-because Julia ships a newer one and step 4 points the loader at it. In exchange it is the most transparent option and
-the one which needs nothing installed that you cannot install as an ordinary user. Choose it when you are working on
-the packages themselves, since their sources are right there to edit.
+**[Local install](#local-install)** puts Julia and a Python virtual environment on your machine directly. It has the
+most steps and the most ways to go wrong, and in exchange it is the most transparent: you can read and change every
+part of the stack, and a Julia REPL shows you exactly what the notebook is running. Choose it if you intend to work on
+the code rather than only read the result. This is the option the vignette is developed against.
 
-**[Conda install](#conda-install)** additionally brings its own C and C++ runtime and its own Julia, so the version of
-everything is fixed by the environment file rather than by whatever the machine happens to have. That removes the whole
-class of problem the local install has to work around. It is still an environment on your machine and not a box of its
-own, so your own tools, data and scripts remain directly usable alongside it. Choose it when you want the versions
-controlled but still want to work with everything else you have.
+**[Conda install](#conda-install)** does the same thing with one environment manager for both languages, which is
+easier if that is how you already work, and self-contained if you would rather the vignette did not touch anything
+outside its environment.
 
-**[Docker](#docker)** isolates the entire userland, so the vignette runs identically regardless of what the host is —
-the strongest guarantee that what you run is what was tested, and the right answer for reproducing a published result
-years later. The cost is that the isolation cuts both ways: your other tools are outside the container, data has to be
-mounted in, and modifying the packages means rebuilding the image or mounting sources over them. It also needs a
-container runtime you are permitted to use, which on a shared cluster you often are not. Choose it when you want the
-vignette to run and do not need it to mix with anything else.
+**[Docker](#docker)** gives you an image with the whole stack already resolved. It is the most reliable way to run the
+vignette and the least convenient way to change it, so choose it if you want to see the vignette work rather than to
+work on it.
 
 ## Local install
 
@@ -185,15 +172,9 @@ vignette was verified against. Prefer the shared environment unless you have a r
 TODO.
 
 This will be an `environment.yml` holding both Python and Julia, with the Julia depot inside the environment prefix so
-that the whole thing is self-contained and removing the environment removes everything it installed.
-
-The reason to prefer it over the local install is that `conda` supplies the C and C++ runtime as well as the packages.
-Step 4 of the local install exists because this machine's `libstdc++` predates the one Julia 1.12 needs; in a `conda`
-environment that library comes from the environment, so neither the problem nor the workaround arises.
-
-The open question is whether `conda-forge` carries Julia 1.12, which `Metacells.jl` requires. If it does not, Julia
-comes from `juliaup` as in the local install and only the Python side is managed by `conda` — which keeps the
-convenience but gives up the version control, so it is worth checking before writing this section.
+that the whole thing is self-contained and removing the environment removes everything it installed. The open question
+is whether `conda-forge` carries the Julia 1.12 which `Metacells.jl` requires; if it does not, Julia comes from
+`juliaup` as in the local install and only the Python side is managed by `conda`.
 
 Until this is written, follow the [local install](#local-install) and use a `conda` environment with Python 3.10 or
 later in place of the virtual environment in step 2. Everything else is the same.
@@ -205,9 +186,5 @@ TODO.
 This will be an image with the whole stack resolved and precompiled, so that running the vignette needs nothing
 installed but Docker itself, and a `docker run` line which mounts your data and publishes the notebook.
 
-The base image has to be pinned by digest rather than by tag, since the point of this option is that the image is the
-same one that was tested, and a tag is repointed at will.
-
-Two other things have to be decided: whether the image ships the example data or downloads it on first run, and whether
-it is published to a registry or built locally from a `Dockerfile` in this repository. Building locally costs each
-reader a long first build; publishing costs somewhere to publish it and someone to keep it current.
+Two things have to be decided: whether the image ships the example data or downloads it on first run, and whether it is
+published to a registry or built locally from a `Dockerfile` in this repository.
