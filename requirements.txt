@@ -10,5 +10,5 @@ dafpy @ git+https://github.com/tanaylab/Daf.py.git@716e9dc3577f77730190875d441a9
 somegraphspy @ git+https://github.com/tanaylab/somegraphspy.git@436762c723f7c040fe5e9f104a25d85af6eb64fa
 metacellspy @ git+https://github.com/tanaylab/metacellspy.git@5be684abb608be41b7996fd4df1bd84923020fc4
 
-# Running the notebook itself.
-jupyterlab
+# Jupyter is deliberately not here. Where it comes from depends on how you install: you may already
+# have one, or it is installed alongside these, or it is part of the image. See `INSTALL.md`.

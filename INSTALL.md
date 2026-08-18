@@ -4,58 +4,52 @@ The vignette runs Python code which invokes Julia code, and neither package inde
 stack. `pip install dafpy` fetches 0.1.1, whose query syntax differs from the 0.3.0 the rest of the stack expects; the
 General registry's `DataAxesFormats` is 0.1.2, which `Metacells` will not resolve against; and five of the eight
 packages are on neither index at all. Everything is therefore installed from its repository, pinned to a known
-revision. Getting the two languages to cooperate is most of the remaining work, which is why this is a document of its
-own rather than a cell in the notebook.
+revision. Getting the two languages to cooperate is the rest of the work, which is why this is a document of its own
+rather than a cell in the notebook.
 
 When the packages are released this document will get considerably shorter.
 
 ## Which of these to use
 
 To *read* the vignette, install nothing: the released HTML and PDF are linked from the `README`. You install this to
-run the pipeline on your own data, which all three options do equally well.
+run the pipeline on your own data.
 
-What separates them is how much of your machine they isolate you from, and what you give up for that:
-
-| | [Local](#local-install) | [Conda](#conda-install) | [Docker](#docker) |
+| | [Current env](#current-env) | [Conda](#conda) | [Docker](#docker) |
 |---|---|---|---|
-| isolates Python and Julia packages | ✔ | ✔ | ✔ |
-| isolates the C and C++ runtime | | ✔ | ✔ |
-| pins the versions of Python and Julia themselves | | ✔ | ✔ |
-| isolates the rest of the operating system | | | ✔ |
-| your other tools are usable alongside it | ✔ | ✔ | only through the container |
+| uses the Python, Julia and Jupyter you already have | ✔ | | |
+| isolated from your setup — packages, C++ runtime, interpreter versions | | ✔ | ✔ |
+| isolated from the rest of the operating system | | | ✔ |
+| your other tools remain usable | ✔ | unless they are Python or Julia ones, or manually added | only if added to the image |
+| includes additional useful packages | | ✔ | ✔ |
 | needs privileges you may not have on a shared machine | | | ✔ |
-| how much work it is to set up | most, and the most to get wrong | less | least |
+| how much work it is to set up | little | most | little |
+| what it can disturb | your Python and Julia setup | nothing | nothing |
 
-**[Local install](#local-install)** isolates the packages and nothing else: a virtual environment for Python, a project
-of its own for Julia, but your system's C library and C++ runtime underneath, and whichever Python and Julia you
-happen to have. That last part is a real exposure rather than a theoretical one — on RHEL 8 the system `libstdc++` is
-too old for Julia 1.12, and this install works only because Julia ships a newer one and step 4 points the loader at it.
-In exchange it is the most transparent option and
-the one which needs nothing installed that you cannot install as an ordinary user. Choose it when you are working on
-the packages themselves, since their sources are right there to edit.
+**[Current env](#current-env)** installs the packages into the Python and the Julia you already use. It is the least
+work and the most direct — your Jupyter already sees the result, and your existing tools are all still there — and it
+is the only one which can damage anything. The Julia packages are added to your default Julia environment, and they
+demand versions the registry does not have, so they can conflict with whatever else lives there. Choose it when your
+Python and Julia setups are ones you do not mind changing.
 
-**[Conda install](#conda-install)** additionally brings its own C and C++ runtime and its own Julia, so the version of
-everything is fixed by the environment file rather than by whatever the machine happens to have. That removes the whole
-class of problem the local install has to work around. It is still an environment on your machine and not a box of its
-own, so your own tools, data and scripts remain directly usable alongside it. Choose it when you want the versions
-controlled but still want to work with everything else you have.
+**[Conda](#conda)** builds a separate environment with its own Python, Julia and C++ runtime, so nothing of yours is
+touched and the versions are the ones this was tested with. It is the most work to set up, and the isolation is real
+in both directions: your shell tools and R remain usable, but your other Python environment's packages and your
+existing Julia packages are not, unless you add them here too. Choose it when you want the vignette to work without
+negotiating with the rest of your machine.
 
-**[Docker](#docker)** isolates the entire userland, so the vignette runs identically regardless of what the host is —
-the strongest guarantee that what you run is what was tested, and the right answer for reproducing a published result
-years later. The cost is that the isolation cuts both ways: your other tools are outside the container and data has to
-be mounted in, including any package you want to work on. It also needs a container runtime you are permitted to use,
-which on a shared cluster you often are not. Choose it when you want the vignette to run and do not need it to mix with
-anything else.
+**[Docker](#docker)** goes further and isolates the operating system as well, so it runs identically wherever it runs.
+The cost is that nothing of yours is inside it: your data has to be mounted, your tools are absent unless added to the
+image, and you need a container runtime you are permitted to use, which on a shared cluster you often are not. Choose
+it to run the vignette rather than to work alongside it.
 
-## Local install
+The conda environment and the Docker image contain the same packages, so the vignette behaves the same in either.
 
-Three steps: the Python packages, the Julia packages, and telling Python which Julia to use. The last one is the part
-that goes wrong silently, so read it even if the first two went smoothly.
+## Current env
 
 ### Before you start
 
-* **Julia 1.12.** `Metacells.jl` requires it. The simplest way to get it is
-  [juliaup](https://github.com/JuliaLang/juliaup):
+* **Julia 1.12**, which `Metacells.jl` requires. If you do not have it,
+  [juliaup](https://github.com/JuliaLang/juliaup) is the simplest way:
 
   ```
   curl -fsSL https://install.julialang.org | sh
@@ -64,7 +58,7 @@ that goes wrong silently, so read it even if the first two went smoothly.
   julia --version
   ```
 
-* **Python 3.10 or later**, with `venv`.
+* **Python 3.10 or later**, the one your Jupyter runs.
 
 * **git**, because none of the packages is installed from a package index.
 
@@ -75,140 +69,107 @@ git clone https://github.com/tanaylab/metacells-sharpening-vignette
 cd metacells-sharpening-vignette
 ```
 
-Every command below is run from that directory.
-
 ### 2. Install the Python packages
 
 ```
-python3 -m venv venv
-venv/bin/pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 This installs `dafpy` (the data layer), `somegraphspy` (the graphs), `metacellspy` (the computations) and `juliacall`
 (which lets Python invoke Julia), each pinned to a specific commit.
 
+Use the `pip` of the Python your Jupyter runs. That is what makes the notebook see these packages without any further
+work: a notebook runs in a kernel, and the kernel is the Python that Jupyter itself runs in.
+
+This upgrades whatever these packages depend on, `numpy` and `pandas` among them, in that environment.
+
 ### 3. Install the Julia packages
 
 ```
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
-```
-
-This reads `Manifest.toml`, which pins every Julia package to an exact revision, and installs them into `.` as a
-project of its own. It downloads and precompiles a fair amount, so the first run takes a while.
-
-Nothing is installed into your default Julia environment, so this cannot disturb any other Julia work you do.
-
-### 4. Tell Python which Julia to use
-
-By default `juliacall` builds a private Julia environment of its own, which Python can see and you cannot. That is a
-poor place to be when something misbehaves, so the vignette instead points Python at the same project you just
-instantiated. Then `julia --project=.` gives you a REPL holding exactly what the notebook holds, which is how you debug
-it.
-
-Four environment variables do this. The notebook sets them in its first cell, before importing anything, and then
-checks that they took effect; you only need them yourself if you are running Python outside the notebook:
-
-```
-export PYTHON_JULIACALL_USE_DEFAULT_ENVIRONMENT=no
-export PYTHON_JULIACALL_EXE="$(julia -e 'print(Sys.BINDIR)')/julia"
-export PYTHON_JULIACALL_PROJECT="$PWD"
-export LD_LIBRARY_PATH="$(julia -e 'print(Sys.BINDIR)')/../lib/julia"
-```
-
-Each of them is there for a reason which is not obvious:
-
-* `PYTHON_JULIACALL_USE_DEFAULT_ENVIRONMENT=no` is **required**. Without it, importing `dafpy` activates your default
-  Julia environment and discards whatever project you asked for, without saying anything.
-
-* `PYTHON_JULIACALL_EXE` must be the real Julia binary. `which julia` gives you `juliaup`'s launcher, and `juliacall`
-  works out where Julia's system image lives from the path of the executable it is given, so the launcher's directory
-  sends it looking in the wrong place. `Sys.BINDIR` is Julia telling you where it actually is.
-
-* `PYTHON_JULIACALL_EXE` and `PYTHON_JULIACALL_PROJECT` are honoured **only when both are set**. Setting one alone does
-  nothing.
-
-* `LD_LIBRARY_PATH` is needed on distributions whose C++ runtime is older than Julia's, which includes RHEL 8 and its
-  relatives. Julia ships a suitable `libstdc++` next to itself, and this is what lets Python's dynamic loader find it.
-  Without it, importing fails with `GLIBCXX_... not found`. It does no harm where it is not needed.
-
-### 5. Check that it worked
-
-```
-venv/bin/python -c '
-import metacellspy as mc
-from metacellspy.julia_import import jl
-print("Julia project:", jl.Base.active_project())
-print("metacellspy  :", mc.__version__)
+julia -e '
+using Pkg
+for url in [
+    "https://github.com/tanaylab/TanayLabUtilities.jl",
+    "https://github.com/tanaylab/DataAxesFormats.jl",
+    "https://github.com/tanaylab/Slanter.jl",
+    "https://github.com/tanaylab/SomeGraphs.jl",
+    "https://github.com/tanaylab/Metacells.jl",
+]
+    Pkg.add(; url = url)
+end
+Pkg.add("PythonCall")
 '
 ```
 
-The project it prints must be the `Project.toml` in this directory. If it is one under `~/.julia`, then step 4 did not
-take effect, and the notebook will not be running what you think it is.
+These go into your default Julia environment, which is what `juliacall` uses unless told otherwise, so nothing else
+has to be configured.
 
-To confirm both languages really do share one environment:
+They have to be added by URL rather than by name. Four of them are not in the General registry at all, and the fifth,
+`DataAxesFormats`, is there only at 0.1.2, which `Metacells` will not accept. Adding them by name fails, and this is
+also why they can conflict with what your default environment already holds.
 
-```
-julia --project=. -e 'using Metacells; println(pkgversion(Metacells))'
-```
-
-### 6. Run the notebook
+### 4. Check that it worked
 
 ```
-venv/bin/jupyter lab
+python -c '
+import metacellspy as mc
+print("metacellspy:", mc.__version__)
+print("regularization:", mc.GENE_FRACTION_REGULARIZATION_FOR_CELLS)
+'
 ```
 
-The notebook's first cell sets the variables from step 4 and verifies them, so it works whichever way you started
-Jupyter.
+The second line is read from Julia at import, so printing it means both halves are talking to each other.
 
-### If you insist on separate environments
+### 5. Run the notebook
 
-You do not have to share one environment. Leave all four variables unset and `juliacall` reverts to its own behaviour:
-it creates a private Julia environment and installs into it what the `juliapkg.json` of each Python package asks for,
-which is the same set of packages from the same repositories.
+Start Jupyter as you always do, open the notebook, and run it. Its first cell checks that it can reach Julia and says
+so plainly if it cannot.
 
-This costs you the ability to inspect what the notebook is running. `julia --project=.` will no longer show you what
-Python sees, and the versions are resolved independently of `Manifest.toml`, so they can differ from the ones the
-vignette was verified against. Prefer the shared environment unless you have a reason not to.
+### If importing fails with `GLIBCXX_... not found`
 
-### When it goes wrong
+Your C++ runtime is older than the one Julia needs, which happens on RHEL 8 and its relatives. Julia ships a suitable
+one next to itself, so point the loader at it before starting Jupyter:
 
-| symptom | cause |
-|---|---|
-| `GLIBCXX_3.4.26 not found` | `LD_LIBRARY_PATH` is not pointing at Julia's own `lib/julia` |
-| `Unable to load dependent library ... libjulia-internal` | as above, or `PYTHON_JULIACALL_EXE` is the `juliaup` launcher rather than the real binary |
-| the active project is under `~/.julia` | `PYTHON_JULIACALL_USE_DEFAULT_ENVIRONMENT` is not `no` |
-| `Unsatisfiable requirements detected for package DataAxesFormats` | the Julia packages were added by name instead of by `Pkg.instantiate()` reading `Manifest.toml` |
-| `ModuleNotFoundError: No module named 'metacellspy'` | the wrong Python — use `venv/bin/python`, not `python3` |
-| Python finds a package you did not install | `PYTHONPATH` is set and is leaking packages into the environment |
+```
+export LD_LIBRARY_PATH="$(julia -e 'print(Sys.BINDIR)')/../lib/julia"
+```
 
-## Conda install
+The conda and Docker installs do not have this problem, because they bring their own C++ runtime.
+
+## Conda
 
 TODO.
 
-This will be an `environment.yml` holding both Python and Julia, with the Julia depot inside the environment prefix so
-that the whole thing is self-contained and removing the environment removes everything it installed.
+This will be an `environment.yml` holding Python, Julia and a C++ runtime, with `JULIA_DEPOT_PATH` set by the
+environment's activation hooks so that the Julia packages live inside the environment prefix as well. Removing the
+environment then removes everything it installed, and nothing it does is visible to the rest of your machine.
 
-The reason to prefer it over the local install is that `conda` supplies the C and C++ runtime as well as the packages.
-Step 4 of the local install exists because this machine's `libstdc++` predates the one Julia 1.12 needs; in a `conda`
-environment that library comes from the environment, so neither the problem nor the workaround arises.
+It will also carry the additional packages listed under [Docker](#docker), so that the environment is somewhere you
+can actually work rather than only run the vignette.
 
-The open question is whether `conda-forge` carries Julia 1.12, which `Metacells.jl` requires. If it does not, Julia
-comes from `juliaup` as in the local install and only the Python side is managed by `conda` — which keeps the
-convenience but gives up the version control, so it is worth checking before writing this section.
+Two things have to be settled first. Whether `conda-forge` carries the Julia 1.12 that `Metacells.jl` requires — if it
+does not, Julia comes from `juliaup` and only the Python side is managed by `conda`, which keeps the convenience but
+gives up pinning the interpreter. And that a private Julia depot means the packages are downloaded and precompiled
+again inside the environment rather than shared with your `~/.julia`, which costs disk and a slow first run.
 
-Until this is written, follow the [local install](#local-install) and use a `conda` environment with Python 3.10 or
-later in place of the virtual environment in step 2. Everything else is the same.
+If you want this isolation but cannot use `conda`, a Python virtual environment gets you most of it: create it, install
+into it as in [Current env](#current-env), and set `JULIA_DEPOT_PATH` and `PYTHON_JULIACALL_PROJECT` yourself so that
+Julia does not fall back on your default environment.
 
 ## Docker
 
 TODO.
 
-This will be an image with the whole stack resolved and precompiled, so that running the vignette needs nothing
-installed but Docker itself, and a `docker run` line which mounts your data and publishes the notebook.
+This will be an image with the whole stack resolved and precompiled, and a `docker run` line which mounts your data and
+publishes the notebook, so that running the vignette needs nothing installed but Docker itself.
 
 The base image has to be pinned by digest rather than by tag, since the point of this option is that the image is the
-same one that was tested, and a tag is repointed at will.
+one that was tested, and a tag is repointed at will.
 
-Two other things have to be decided: whether the image ships the example data or downloads it on first run, and whether
-it is published to a registry or built locally from a `Dockerfile` in this repository. Building locally costs each
-reader a long first build; publishing costs somewhere to publish it and someone to keep it current.
+Beyond the vignette's own dependencies it will carry the packages that make it a usable place to work — `jupyterlab`,
+`metacells`, `numpy`, `pandas`, `scipy` and the plotting libraries — and the [Conda](#conda) environment will carry the
+same list, so that the vignette behaves identically in either.
+
+Two things have to be decided: whether the image ships the example data or downloads it on first run, and whether it is
+published to a registry or built locally from a `Dockerfile` in this repository. Building locally costs each reader a
+long first build; publishing costs somewhere to publish it and someone to keep it current.
