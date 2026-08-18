@@ -20,16 +20,17 @@ What separates them is how much of your machine they isolate you from, and what 
 |---|---|---|---|
 | isolates Python and Julia packages | ✔ | ✔ | ✔ |
 | isolates the C and C++ runtime | | ✔ | ✔ |
+| pins the versions of Python and Julia themselves | | ✔ | ✔ |
 | isolates the rest of the operating system | | | ✔ |
-| pins the version of Julia itself | | ✔ | ✔ |
 | your other tools are usable alongside it | ✔ | ✔ | only through the container |
-| the package sources can be edited in place | ✔ | ✔ | rebuild or mount them |
 | needs privileges you may not have on a shared machine | | | ✔ |
+| how much work it is to set up | most, and the most to get wrong | less | least |
 
 **[Local install](#local-install)** isolates the packages and nothing else: a virtual environment for Python, a project
-of its own for Julia, but your system's C library and C++ runtime underneath. That last part is a real exposure rather
-than a theoretical one — on RHEL 8 the system `libstdc++` is too old for Julia 1.12, and this install works only
-because Julia ships a newer one and step 4 points the loader at it. In exchange it is the most transparent option and
+of its own for Julia, but your system's C library and C++ runtime underneath, and whichever Python and Julia you
+happen to have. That last part is a real exposure rather than a theoretical one — on RHEL 8 the system `libstdc++` is
+too old for Julia 1.12, and this install works only because Julia ships a newer one and step 4 points the loader at it.
+In exchange it is the most transparent option and
 the one which needs nothing installed that you cannot install as an ordinary user. Choose it when you are working on
 the packages themselves, since their sources are right there to edit.
 
@@ -41,10 +42,10 @@ controlled but still want to work with everything else you have.
 
 **[Docker](#docker)** isolates the entire userland, so the vignette runs identically regardless of what the host is —
 the strongest guarantee that what you run is what was tested, and the right answer for reproducing a published result
-years later. The cost is that the isolation cuts both ways: your other tools are outside the container, data has to be
-mounted in, and modifying the packages means rebuilding the image or mounting sources over them. It also needs a
-container runtime you are permitted to use, which on a shared cluster you often are not. Choose it when you want the
-vignette to run and do not need it to mix with anything else.
+years later. The cost is that the isolation cuts both ways: your other tools are outside the container and data has to
+be mounted in, including any package you want to work on. It also needs a container runtime you are permitted to use,
+which on a shared cluster you often are not. Choose it when you want the vignette to run and do not need it to mix with
+anything else.
 
 ## Local install
 
