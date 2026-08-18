@@ -1,0 +1,14 @@
+# The Python packages the vignette uses, pinned to the commit each was verified against.
+#
+# None of these is on PyPI at a version which works: `pip install dafpy` fetches 0.1.1, whose query
+# syntax differs from the 0.3.0 the rest of the stack expects, and the other two are not there at
+# all. They are therefore installed from their repositories until they are released.
+#
+# The Julia packages are pinned separately, by `Manifest.toml`.
+
+dafpy @ git+https://github.com/tanaylab/Daf.py.git@716e9dc3577f77730190875d441a9108e0ec2f8b
+somegraphspy @ git+https://github.com/tanaylab/somegraphspy.git@436762c723f7c040fe5e9f104a25d85af6eb64fa
+metacellspy @ git+https://github.com/tanaylab/metacellspy.git@5be684abb608be41b7996fd4df1bd84923020fc4
+
+# Running the notebook itself.
+jupyterlab
