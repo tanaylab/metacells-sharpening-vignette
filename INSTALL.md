@@ -23,7 +23,7 @@ run the pipeline on your own data.
 | your data files are reachable | ✔ | ✔ | only if mounted into the container, or downloaded into it |
 | includes additional useful packages | | ✔ | ✔ |
 | needs privileges you may not have on a shared machine | | | ✔ |
-| how much work it is to set up | little | most | little |
+| how much work it is to set up | most | least | in between |
 | what it can disturb | your Python and Julia setup | nothing | nothing |
 
 **[Current env](#current-env)** installs the packages into the Python and the Julia you already use. It is the least
