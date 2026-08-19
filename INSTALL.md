@@ -96,19 +96,9 @@ This upgrades whatever these packages depend on, `numpy` and `pandas` among them
 ### 3. Install the Julia packages
 
 ```
-julia -e '
-using Pkg
-for url in [
-    "https://github.com/tanaylab/TanayLabUtilities.jl",
-    "https://github.com/tanaylab/DataAxesFormats.jl",
-    "https://github.com/tanaylab/Slanter.jl",
-    "https://github.com/tanaylab/SomeGraphs.jl",
-    "https://github.com/tanaylab/Metacells.jl",
-]
-    Pkg.add(; url = url)
-end
-Pkg.add("PythonCall")
-'
+cd current
+./metacells-sharpening-setup.sh
+cd ..
 ```
 
 These go into your default Julia environment, which is what `juliacall` uses unless told otherwise, so nothing else

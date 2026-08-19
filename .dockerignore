@@ -1,0 +1,13 @@
+# What the docker build is allowed to see.
+#
+# The build context has to be the whole repository, because `COPY` can only name paths inside the
+# context and the image is built from the shared pins and the conda environment. Everything is
+# therefore excluded and the few things the build needs are named, so that anything added to the
+# repository later stays out of the context until it is asked for.
+
+*
+
+!requirements.txt
+!Project.toml
+!Manifest.toml
+!conda/
