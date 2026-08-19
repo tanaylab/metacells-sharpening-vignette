@@ -25,15 +25,18 @@ run the pipeline on your own data.
 | needs privileges you may not have on a shared machine | | | ✔ |
 | how much work it is to set up | most | least | in between |
 | what it can disturb | your Python and Julia setup | nothing | nothing |
+| is guaranteed to work | no — it can conflict with what you already have | almost — the environment is solved afresh, so a dependency can change under it | yes — the image is fixed |
 
-**[Current env](#current-env)** installs the packages into the Python and the Julia you already use. It is the least
-work and the most direct — your Jupyter already sees the result, and your existing tools are all still there — and it
-is the only one which can damage anything. The Julia packages are added to your default Julia environment, and they
+**[Current env](#current-env)** installs the packages into the Python and the Julia you already use. It is the most
+direct — your Jupyter already sees the result, and your existing tools are all still there — and also the most work,
+since you assemble it yourself rather than being handed an environment to create. It is the only one which can damage
+anything. The Julia packages are added to your default Julia environment, and they
 demand versions the registry does not have, so they can conflict with whatever else lives there. Choose it when your
 Python and Julia setups are ones you do not mind changing.
 
 **[Conda](#conda)** builds a separate environment with its own Python, Julia and C++ runtime, so nothing of yours is
-touched and the versions are the ones this was tested with. It is the most work to set up, and the isolation is real
+touched and the versions are the ones this was tested with. It is the least work, being an environment file to create
+and a script to run once, and the isolation is real
 in both directions: your shell tools and R remain usable, but your other Python environment's packages and your
 existing Julia packages are not, unless you add them here too. Choose it when you want the vignette to work without
 negotiating with the rest of your machine.
@@ -147,21 +150,27 @@ The conda and Docker installs do not have this problem, because they bring their
 
 TODO.
 
-This will be an `environment.yml` holding Python, Julia and a C++ runtime, with `JULIA_DEPOT_PATH` set by the
-environment's activation hooks so that the Julia packages live inside the environment prefix as well. Removing the
-environment then removes everything it installed, and nothing it does is visible to the rest of your machine.
+This will be two files. An `environment.yml` holding Python, Julia 1.12.6 — the version `Manifest.toml` was built with
+— a C++ runtime, `jupyterlab`, and the additional packages listed under [Docker](#docker), so that the environment is
+somewhere you can work rather than only run the vignette. And a `setup.sh`, run once inside the activated environment,
+doing the two things `conda` cannot: writing the activation script which points `JULIA_DEPOT_PATH` inside the
+environment prefix, and installing the Julia packages, which are not `conda` packages and so need `Pkg`.
 
-It will also carry the additional packages listed under [Docker](#docker), so that the environment is somewhere you
-can actually work rather than only run the vignette.
+Pointing the depot into the prefix is what makes this isolated: the *default* Julia environment then is the one inside
+this environment, so nothing needs to be told which project to use, and removing the environment removes the Julia
+packages along with everything else. The cost is that they are downloaded and precompiled again rather than shared
+with your `~/.julia`, which is disk and a slow first run.
 
-Two things have to be settled first. Whether `conda-forge` carries the Julia 1.12 that `Metacells.jl` requires — if it
-does not, Julia comes from `juliaup` and only the Python side is managed by `conda`, which keeps the convenience but
-gives up pinning the interpreter. And that a private Julia depot means the packages are downloaded and precompiled
-again inside the environment rather than shared with your `~/.julia`, which costs disk and a slow first run.
+After that one script, activating and deactivating is free — the variables are recomputed on each activation.
+
+The environment is solved when it is created, so two people creating it far enough apart can get different versions of
+whatever is not pinned. A lock file, from `conda-lock` or `conda list --explicit`, would close that, at the cost of
+having to regenerate it deliberately; worth it if the vignette is to reproduce a published result rather than only to
+run.
 
 If you want this isolation but cannot use `conda`, a Python virtual environment gets you most of it: create it, install
-into it as in [Current env](#current-env), and set `JULIA_DEPOT_PATH` and `PYTHON_JULIACALL_PROJECT` yourself so that
-Julia does not fall back on your default environment.
+into it as in [Current env](#current-env), and set `JULIA_DEPOT_PATH` yourself so that the Julia packages do not land
+in your default environment.
 
 ## Docker
 
