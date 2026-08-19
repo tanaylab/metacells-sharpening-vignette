@@ -20,6 +20,7 @@ run the pipeline on your own data.
 | isolated from your setup — packages, C++ runtime, interpreter versions | | ✔ | ✔ |
 | isolated from the rest of the operating system | | | ✔ |
 | your other tools remain usable | ✔ | unless they are Python or Julia ones, or manually added | only if added to the image |
+| your data files are reachable | ✔ | ✔ | only if mounted into the container, or downloaded into it |
 | includes additional useful packages | | ✔ | ✔ |
 | needs privileges you may not have on a shared machine | | | ✔ |
 | how much work it is to set up | little | most | little |
@@ -43,6 +44,12 @@ image, and you need a container runtime you are permitted to use, which on a sha
 it to run the vignette rather than to work alongside it.
 
 The conda environment and the Docker image contain the same packages, so the vignette behaves the same in either.
+
+These are three points on a spectrum rather than the only possibilities. A Python virtual environment, a Julia depot of
+its own through `JULIA_DEPOT_PATH`, a Julia project through `--project`, and the private environment `juliacall` builds
+for itself all work, and can be combined to isolate the two languages to whatever degree you want, independently. None
+of that is described here: these three are the combinations which are tested, and the rest is left to those who know
+they want it.
 
 ## Current env
 
