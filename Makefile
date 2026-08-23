@@ -47,8 +47,8 @@ check: docs  ## check the committed outputs are of the code the notebooks hold n
 # else is the document tool chain and runs in whatever environment `make` was started from, so that
 # generating the documents needs nothing of the vignette installed.
 #
-# This default is the conda install. Set it to nothing for the other two ways of installing, where
-# the environment `make` was started from already is the vignette's:
+# This default is the conda install. Set it to nothing when installing into the Python and Julia you
+# already use, where the environment `make` was started from already is the vignette's:
 #     make run EXECUTE_IN=
 EXECUTE_IN = conda run --no-capture-output --name metacells-sharpening
 
