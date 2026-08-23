@@ -8,19 +8,39 @@ through `metacellspy`.
 
 ## Reading it
 
-Reading needs nothing installed. Both forms hold the same thing, and each is a single self-contained file which needs
-no network access to view:
+Reading needs nothing installed. Both forms hold the same thing, and each is a single self-contained file which needs no
+network access to view:
 
 * [HTML](https://tanaylab.github.io/metacells-sharpening-vignette/sharpening.html)
 * [PDF](https://tanaylab.github.io/metacells-sharpening-vignette/sharpening.pdf)
 
+## Installing it
+
+See [INSTALL.md](INSTALL.md). It describes two ways of installing — into the Python and Julia you already use, or into a
+conda environment which brings its own — and which to choose. Eight packages are involved, three Python and five Julia,
+and no package index carries a working version of any of them, which is why installing is a document of its own.
+
+## Downloading the data
+
+TODO
+
 ## Running it
 
-See [INSTALL.md](INSTALL.md). It describes two ways of installing — into the Python and Julia you already use, or into
-a conda environment which brings its own — and which to choose. Eight packages are involved, three Python and five
-Julia, and no package index carries a working version of any of them, which is why installing is a document of its own.
+With all the above done:
 
-The notebook reads three files from `input/`, which are not in this repository, being far too large for one.
+```
+git clone https://github.com/tanaylab/metacells-sharpening-vignette
+cd metacells-sharpening-vignette
+conda activate metacells-sharpening   # only if you installed that way
+jupyter lab sharpening.ipynb
+```
+
+The first cell imports the three Python packages and prints a value read from Julia, so an environment which is not set
+up fails there rather than somewhere in the middle of the pipeline.
+
+The notebook reads three files from `input/`, which are not in this repository, being far too large for one. You can
+equally point it at your own data, in which case you need nothing from this repository at all — what you installed is
+the whole pipeline.
 
 ## The build
 
@@ -39,8 +59,8 @@ paragraph regenerates the documents without recomputing anything. Executing is d
 replaced while the prose around them stays as it is.
 
 Only `make run` needs the vignette's own environment. Generating the documents is a separate tool chain, pinned in
-`requirements.txt`, and needs neither the eight packages nor the Julia they talk to nor the input data — the notebook
-is committed with its outputs, and converting it is all that happens. `EXECUTE_IN` is how the vignette's environment is
+`requirements.txt`, and needs neither the eight packages nor the Julia they talk to nor the input data — the notebook is
+committed with its outputs, and converting it is all that happens. `EXECUTE_IN` is how the vignette's environment is
 entered, and defaults to the conda install:
 
 ```
