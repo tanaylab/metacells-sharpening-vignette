@@ -1,14 +1,67 @@
-# The Python packages the vignette uses, pinned to the commit each was verified against.
+# The tool chain which generates the documents, pinned so that running `make docs` locally produces
+# what the CI server produces. An unpinned dependency is enough to change the result: one version of
+# `pygments` renders a cell magic as one token and the next renders it as two, and the generated
+# bytes are what the CI server compares.
 #
-# None of these is on PyPI at a version which works: `pip install dafpy` fetches 0.1.1, whose query
-# syntax differs from the 0.3.0 the rest of the stack expects, and the other two are not there at
-# all. They are therefore installed from their repositories until they are released.
+# This is *not* what the vignette itself needs. Those eight packages are installed by
+# `metacells-sharpening-setup-environment.sh`, from the head of each repository, and none of them is
+# here: generating the documents converts a notebook which was executed elsewhere, so it needs
+# neither the packages nor the Julia they talk to nor the input data. `make run` is the one target
+# which needs the vignette's own environment, and it is not the one this file is for.
 #
-# The Julia packages are pinned separately, by `Manifest.toml`.
-
-dafpy @ git+https://github.com/tanaylab/Daf.py.git@716e9dc3577f77730190875d441a9108e0ec2f8b
-somegraphspy @ git+https://github.com/tanaylab/somegraphspy.git@436762c723f7c040fe5e9f104a25d85af6eb64fa
-metacellspy @ git+https://github.com/tanaylab/metacellspy.git@5be684abb608be41b7996fd4df1bd84923020fc4
-
-# Jupyter is deliberately not here. Where it comes from depends on how you install: you may already
-# have one, or it is installed alongside these, or it is part of the image. See `INSTALL.md`.
+# To upgrade, regenerate with `pip freeze` in an empty virtual environment holding only
+# `nbconvert[webpdf]` and `ipython`, taking care that `PYTHONPATH` is not set, and regenerate the
+# documents in the same commit.
+#
+# `playwright` is here because a PDF is printed from the HTML by a headless chromium, which it
+# provides; `playwright install --with-deps chromium` fetches the browser itself, which is not a
+# Python package and so cannot be pinned here. IPython is here for its lexer: without it the
+# highlighting of a cell magic such as `%%time` falls back to plain Python.
+asttokens==3.0.2
+attrs==26.1.0
+beautifulsoup4==4.15.0
+bleach==6.4.0
+defusedxml==0.7.1
+executing==2.2.1
+fastjsonschema==2.22.2
+greenlet==3.5.5
+ipython==9.16.1
+ipython_pygments_lexers==1.1.1
+jedi==0.20.0
+Jinja2==3.1.6
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+jupyter_client==8.9.1
+jupyter_core==5.9.1
+jupyterlab_pygments==0.3.0
+MarkupSafe==3.0.3
+matplotlib-inline==0.2.2
+mistune==3.3.4
+nbclient==0.11.0
+nbconvert==7.17.1
+nbformat==5.11.1
+packaging==26.3
+pandocfilters==1.5.1
+parso==0.8.7
+pexpect==4.9.0
+platformdirs==4.11.3
+playwright==1.62.0
+prompt_toolkit==3.0.53
+psutil==7.2.2
+ptyprocess==0.7.0
+pure_eval==0.2.3
+pyee==13.0.1
+Pygments==2.21.0
+python-dateutil==2.9.0.post0
+pyzmq==27.2.0
+referencing==0.37.0
+rpds-py==2026.6.3
+six==1.17.0
+soupsieve==2.9.2
+stack-data==0.6.3
+tinycss2==1.5.1
+tornado==6.5.8
+traitlets==5.16.1
+typing_extensions==4.16.0
+wcwidth==0.8.2
+webencodings==0.6.1

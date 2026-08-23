@@ -1,0 +1,65 @@
+# A conda environment holding both languages, isolated from whatever else is on your machine.
+#
+# Create it with `conda env create -f metacells-sharpening-conda-environment.yml`, activate it, and run
+# `metacells-sharpening-setup-environment.sh` once. See `INSTALL.md`.
+#
+# Only what `pip` cannot install is here: the two languages themselves. Everything else is installed
+# by the setup script, so that a single resolver owns the whole Python dependency graph. Listing a
+# Python package in both places is how a conda environment breaks - `conda` records that it installed
+# a version, `pip` replaces it while resolving something else, and `conda`'s idea of what is
+# installed is then wrong.
+#
+# Nothing beyond the vignette's own needs is installed. `pip install` whatever else you want to work
+# with; in particular the `metacells` package, which computes the metacells the sharpening starts
+# from, holds `numpy` below 2 and `pandas` below 3, and there is no reason to impose that on someone
+# who does not want it.
+#
+# Julia is pinned to 1.12, which `Metacells.jl` requires, and to a patch level rather than to the
+# latest 1.12, so that everyone creating this environment gets the same one.
+
+name: metacells-sharpening
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - julia=1.12.6
+  - pip
+
+# Values here are stored exactly as written, so anything which has to be worked out - the Julia
+# depot, which is under `$CONDA_PREFIX` - is set by the setup script instead.
+variables:
+
+  # Proves this environment is the active one, which `$CONDA_PREFIX` cannot: that is set for any
+  # conda environment. The setup script installs differently depending on whether this is set, and
+  # uses the value to notice an environment built from an older version of this file.
+  METACELLS_SHARPENING_VIGNETTE: "0.1.0"
+
+  # What the environment is isolated from, which `conda` does not do by itself: `PYTHONPATH` is
+  # yours, and it and your `~/.local` site directory are searched before anything installed here.
+  # A source checkout on `PYTHONPATH` is the worst case, since `pip` then considers that package
+  # installed and skips it, leaving an environment which looks complete and is not.
+  #
+  # `conda` puts back whatever these held when the environment is deactivated, so neither is
+  # affected outside it. An empty `PYTHONPATH` is read exactly as an unset one.
+  PYTHONPATH: ""
+  PYTHONNOUSERSITE: "1"
+
+  # Which Julia `juliacall` runs. `@default` means the `julia` in the path and its default
+  # environment - here, the Julia this file installs and the environment the setup script fills.
+  # Without them `juliacall` installs a second Julia, of its own, and uses that instead, so that
+  # nothing the setup script did is what the notebook runs against.
+  #
+  # `@default` is expanded by `dafpy`, and by `somegraphspy` and `metacellspy` which are built on it.
+  # It is a value `juliacall` itself rejects, so importing `juliacall` before any of them fails,
+  # saying which variable it could not use, rather than quietly installing that second Julia.
+  PYTHON_JULIACALL_EXE: "@default"
+  PYTHON_JULIACALL_PROJECT: "@default"
+
+  # How `juliacall` runs Julia. Nothing applies these by itself, and their absence is not an error:
+  # Julia simply runs on one thread. Asking for more threads without also handling the signals is
+  # what makes Julia and Python fight over them, which shows up as a segfault rather than an error,
+  # so the two belong together.
+  PYTHON_JULIACALL_THREADS: "auto"
+  PYTHON_JULIACALL_HANDLE_SIGNALS: "yes"
