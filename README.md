@@ -38,9 +38,9 @@ jupyter lab sharpening.ipynb
 The first cell imports the three Python packages and prints a value read from Julia, so an environment which is not set
 up fails there rather than somewhere in the middle of the pipeline.
 
-The notebook reads three files from `input/`, which are not in this repository, being far too large for one. You can
-equally point it at your own data, in which case you need nothing from this repository at all — what you installed is
-the whole pipeline.
+The notebook reads `assigned_cells.h5ad` and `type_colors.csv` from `input/`, which are not in this repository, the
+first being far too large for one. You can equally point it at your own data, in which case you need nothing from this
+repository at all — what you installed is the whole pipeline.
 
 ## The build
 
@@ -67,3 +67,25 @@ entered, and defaults to the conda install:
 make run                  # the conda environment
 make run EXECUTE_IN=      # the Python and Julia you already use
 ```
+
+## Developing it
+
+A notebook is a poor place to develop in, since every run starts from the top and this pipeline is far too expensive
+for that. The code of each cell is therefore a script in `steps`, and `steps/Makefile` lists them in the order they
+run — that list is what the notebook's code *is*. Each script is in two parts: above the marker, the context the
+notebook would have in memory by then; below it, what actually becomes the cell. Only the lower half is published, so
+the context may be as repetitive as it likes.
+
+```
+make -C steps list         # the steps, in order
+make -C steps              # run whichever are out of date
+make -C steps import_cells # run up to that one, and no further
+```
+
+A step leaves its results on disk, in `dafs`, since a script cannot leave anything in memory for the next one. That is
+what lets any step be re-run on its own.
+
+`make embed` then puts each step's cell into the notebook cell which names it — in the cell's own metadata, so that
+adding a paragraph or reordering the prose cannot put one step's code into another's slot. `make check` reports every
+way the two can disagree: a cell naming no step, a cell naming a step which does not exist, two cells naming one step,
+a step with no cell, and cells in an order the steps do not run in.

@@ -33,14 +33,30 @@ clean: clean-docs  ## remove all generated documents
 clean-docs:
 	rm -f $(HTML_FILES) $(PDF_FILES) $(SITE_FILES)
 
-ci: docs check  ## generate the documents and check them, as the CI server does
+ci: test docs check  ## test, generate the documents and check them, as the CI server does
+
+# The scripts which make the notebook out of the steps, and say whether it is current. They need
+# neither the vignette installed nor its data, being about notebooks as files.
+.PHONY: test
+test:  ## test the scripts
+	python3 -m pytest tests
 
 # The CI server has neither the input data nor a way to run the pipeline, so it cannot execute a
 # notebook - it can only say that a committed one describes the code it holds. Running the pipeline
 # is `make run`, which is done by whoever changed the code.
+# Both of these are `steps/Makefile`'s to answer, since it is what says which steps there are and in
+# what order; asking it rather than repeating the list keeps there being one definition of it.
 .PHONY: check
 check: docs  ## check the committed outputs are of the code the notebooks hold now
+	$(MAKE) -C steps check
 	python3 scripts/execute_notebooks.py --check $(NOTEBOOK_FILES)
+
+# The code of each cell is developed in `steps`, one script per cell, where a step can be run on its
+# own rather than by running the notebook from the top. Which cell holds which step is in the cell's
+# own metadata, so the two are checked against each other by name rather than by position.
+.PHONY: embed
+embed:  ## put the code developed in `steps` into the notebook's cells
+	$(MAKE) -C steps embed
 
 # How to enter the vignette's own environment, which executing a notebook is the only thing here to
 # need: it runs the pipeline, so it needs the eight packages and the Julia they talk to. Everything
