@@ -19,6 +19,7 @@ With ``--check`` nothing is written: it only reports whether the notebook alread
 steps say, which is what the CI server can ask without running anything.
 """
 
+import ast
 import json
 import sys
 from pathlib import Path
@@ -46,6 +47,17 @@ def cell_of_step(path: Path) -> str:
     if marker == "":
         raise ValueError(f"{path}: has no {CELL_MARKER!r} line")
     return cell.strip("\n")
+
+
+def imports_of(cell: str) -> List[str]:
+    """Return what a cell imports, which only the first one may do."""
+    imported = []
+    for node in ast.walk(ast.parse(cell)):
+        if isinstance(node, ast.Import):
+            imported += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            imported.append(node.module or "...")
+    return imported
 
 
 def step_of_cell(cell: Dict[str, Any]) -> str:
@@ -114,6 +126,20 @@ def main() -> int:
     cell_step_names = [step_of_cell(cell) for cell in code_cells]
 
     problems = problems_of(step_names, cell_step_names)
+
+    # A notebook runs from the top, so the first cell is where what everything uses comes from. A later cell importing
+    # for itself would work and would be wrong: the reader would meet the same import several times, and a step whose
+    # context imports something it uses would go unnoticed until the notebook is run, rather than now.
+    for step_name in step_names[1:]:
+        path = step_paths[step_name]
+        try:
+            imported = imports_of(cell_of_step(path))
+        except SyntaxError as exception:
+            problems.append((str(path), f"is not valid Python: {exception}"))
+            continue
+        if imported:
+            problems.append((str(path), f"imports {', '.join(imported)}, which the first cell is where to do"))
+
     if problems:
         for path, description in problems:
             print(f"::error file={path}::{description}" if path else f"::error::{description}")

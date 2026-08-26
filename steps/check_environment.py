@@ -1,6 +1,8 @@
 # The first cell has no context to establish: it is the first thing the notebook does.
 
 # --- the notebook cell starts here ---
+import numpy as np
+
 import dafpy as dp
 import metacellspy as mc
 import somegraphspy as sg

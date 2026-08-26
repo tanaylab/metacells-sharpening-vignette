@@ -135,6 +135,34 @@ def test_the_cells_in_the_wrong_order(monkeypatch, tmp_path, capsys) -> None:
     assert "the steps run in the order" in capsys.readouterr().out
 
 
+def test_a_later_step_importing(monkeypatch, tmp_path, capsys) -> None:
+    # A notebook runs from the top, so the first cell is where what everything uses comes from.
+    a_good_pair(tmp_path)
+    notebook = tmp_path / "notebook.ipynb"
+    write_step(tmp_path / "steps", "second", "import numpy\nprint('second')")
+
+    assert embed(monkeypatch, tmp_path, notebook, "first", "second") == 1
+    assert "imports numpy, which the first cell is where to do" in capsys.readouterr().out
+
+
+def test_the_first_step_may_import(monkeypatch, tmp_path, capsys) -> None:
+    a_good_pair(tmp_path)
+    notebook = tmp_path / "notebook.ipynb"
+    write_step(tmp_path / "steps", "first", "import numpy\nprint('first')")
+
+    assert embed(monkeypatch, tmp_path, notebook, "first", "second") == 0
+    assert "EMBEDDED first" in capsys.readouterr().out
+
+
+def test_a_step_which_is_not_python(monkeypatch, tmp_path, capsys) -> None:
+    a_good_pair(tmp_path)
+    notebook = tmp_path / "notebook.ipynb"
+    write_step(tmp_path / "steps", "second", "this is not python(")
+
+    assert embed(monkeypatch, tmp_path, notebook, "first", "second") == 1
+    assert "is not valid Python" in capsys.readouterr().out
+
+
 def test_a_step_with_no_file(monkeypatch, tmp_path, capsys) -> None:
     notebook = a_good_pair(tmp_path)
 

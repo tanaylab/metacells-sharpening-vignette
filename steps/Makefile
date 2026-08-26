@@ -25,7 +25,9 @@ ROOT := $(abspath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))..)
 # and is not published, whatever files happen to be in this directory.
 STEP_NAMES = \
     check_environment \
-    import_cells
+    import_cells \
+    clean_data \
+    reconstruct_axes
 
 STAMP_FILES = $(patsubst %, .stamp/%, $(STEP_NAMES))
 
