@@ -20,22 +20,15 @@ EXPECTED_VERSION="0.1.0"
 # fetches 0.1.1, whose query syntax differs from the 0.3.0 the rest of the stack expects. Until they
 # are released they are taken from the head of each repository, which is where the version the
 # vignette is written against lives.
+#
+# As a tarball of the branch rather than as `git+https://`, which `pip` implements by running `git`.
+# Installing this therefore needs no `git`, which is worth more than the repository `pip` would have
+# recorded as the source: Julia's own `Pkg` uses the `LibGit2` it bundles, so nothing else here needs
+# one either.
 PYTHON_PACKAGES=(
-    "dafpy @ git+https://github.com/tanaylab/Daf.py.git"
-    "somegraphspy @ git+https://github.com/tanaylab/somegraphspy.git"
-    "metacellspy @ git+https://github.com/tanaylab/metacellspy.git"
-)
-
-# The Julia packages. Four are not in the General registry at all, and the fifth, `DataAxesFormats`,
-# is there only at a version `Metacells` will not accept, so they are added by URL rather than by
-# name, which also means the head of each repository. The dependencies come before what depends on
-# them.
-JULIA_REPOSITORIES=(
-    https://github.com/tanaylab/TanayLabUtilities.jl
-    https://github.com/tanaylab/DataAxesFormats.jl
-    https://github.com/tanaylab/Slanter.jl
-    https://github.com/tanaylab/SomeGraphs.jl
-    https://github.com/tanaylab/Metacells.jl
+    "dafpy @ https://github.com/tanaylab/dafpy/archive/refs/heads/main.tar.gz"
+    "somegraphspy @ https://github.com/tanaylab/somegraphspy/archive/refs/heads/main.tar.gz"
+    "metacellspy @ https://github.com/tanaylab/metacellspy/archive/refs/heads/main.tar.gz"
 )
 
 IN_CONDA_ENVIRONMENT=false
@@ -84,6 +77,37 @@ if $IN_CONDA_ENVIRONMENT; then
     pip install jupyterlab
 fi
 
+# Which Julia packages are needed is not written down here. Each of the three Python packages ships a
+# `juliapkg.json` saying what it imports, and `juliapkg` - which arrives with `juliacall` - merges
+# them. Reading that is what keeps this from being a second, and eventually wrong, copy of the same
+# list: when one of the three starts using another Julia package, this installs it without being
+# told. It has to run after the `pip` install above, since those are the files it reads.
+#
+# `juliapkg` cannot install them itself. It manages a Julia environment of its own, and
+# `PYTHON_JULIACALL_PROJECT=@default` deliberately takes that job away from it, so what it knows has
+# to be handed to `Pkg`.
+#
+# `juliacall` declares itself the same way, which is where `PythonCall` - what it talks to Julia
+# through - comes from, so nothing here names that either.
+#
+# Each package is named as `name` when it is in the General registry, and as `name=url` when it is
+# not - which is the four of ours that are not registered, plus `DataAxesFormats`, which is there
+# only at a version `Metacells` will not accept.
+JULIA_PACKAGES=($(python3 -c '
+import contextlib
+import sys
+
+import juliapkg.deps
+
+# `juliapkg` says which files it read by printing, so its chatter has to go somewhere other than the
+# list being collected here.
+with contextlib.redirect_stdout(sys.stderr):
+    _, specifications = juliapkg.deps.find_requirements()
+
+for specification in sorted(specifications, key = lambda specification: specification.name):
+    print(specification.name if specification.url is None else f"{specification.name}={specification.url}")
+'))
+
 # The conda `julia` package names an environment after the conda environment, and points the depot
 # inside it, which is what makes the Julia packages part of it: removing the conda environment
 # removes them too. Either way this is the environment that Julia uses by itself, which is what
@@ -98,19 +122,23 @@ using Pkg
 # devved it - and, if you are developing these, what you want the vignette to run against.
 developed = Set(info.name for (_, info) in Pkg.dependencies() if info.is_tracking_path)
 
-# `juliacall` needs `PythonCall` to talk to Julia at all, and adds it itself if it is missing; adding
-# it here means everything is installed in one go.
-for name_or_url in [ARGS; "PythonCall"]
-    name = replace(basename(name_or_url), r"\.jl$" => "")
+specifications = Pkg.PackageSpec[]
+for specification in ARGS
+    name_and_url = split(specification, "="; limit = 2)
+    name = String(name_and_url[1])
     if name in developed
         println("    keeping the version of ", name, " you are developing")
-    elseif name == name_or_url
-        Pkg.add(name)
+    elseif length(name_and_url) == 1
+        push!(specifications, Pkg.PackageSpec(; name))
     else
-        Pkg.add(; url = name_or_url)
+        push!(specifications, Pkg.PackageSpec(; url = String(name_and_url[2])))
     end
 end
-' "${JULIA_REPOSITORIES[@]}"
+
+# All of them in one call, so that `Pkg` resolves them together: added one at a time, a package would
+# have to come after everything it depends on, and nothing here knows that order.
+Pkg.add(specifications)
+' "${JULIA_PACKAGES[@]}"
 
 # Installing is not the same as compiling. Whatever is not compiled here is compiled by the first
 # `import metacellspy`, in the middle of using the notebook.

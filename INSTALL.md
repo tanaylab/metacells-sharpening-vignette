@@ -13,16 +13,18 @@ holds `numpy` below 2 and `pandas` below 3.
 To *read* the vignette, install nothing: the published HTML and PDF are linked from the `README`. You install this to
 run the pipeline on your own data.
 
-| | [Current env](#current-env) | [Conda](#conda) |
-|---|---|---|
-| uses the Python, Julia and Jupyter you already have | ✔ | |
-| isolated from your setup — packages, C++ runtime, interpreter versions | | ✔ |
-| your other tools remain usable | ✔ | unless they are Python or Julia ones, or manually added |
-| your data files are reachable | ✔ | ✔ |
-| gives you a Julia, rather than needing one | | ✔ |
-| how much work it is to set up | most | least |
-| what it can disturb | your Python and Julia setup | nothing |
-| is guaranteed to work | no — it can conflict with what you already have | almost — the environment is solved afresh, so a dependency can change under it |
+| | [Current env](#current-env) | [Conda](#conda) | [Docker](#docker) |
+|---|---|---|---|
+| uses the Python, Julia and Jupyter you already have | ✔ | | |
+| isolated from your setup — packages, C++ runtime, interpreter versions | | ✔ | ✔ |
+| isolated from the rest of the operating system | | | ✔ |
+| your other tools remain usable | ✔ | unless they are Python or Julia ones, or manually added | only if added to the image |
+| your data files are reachable | ✔ | ✔ | only if mounted into the container |
+| gives you a Julia, rather than needing one | | ✔ | ✔ |
+| needs privileges you may not have on a shared machine | | | ✔ |
+| how much work it is to set up | most | least | in between |
+| what it can disturb | your Python and Julia setup | nothing | nothing |
+| is guaranteed to work | no — it can conflict with what you already have | almost — the environment is solved afresh, so a dependency can change under it | yes — the image is fixed |
 
 **[Current env](#current-env)** installs into the Python and Julia you already use. Your Jupyter sees the result at once
 and your existing tools are untouched — but you need a Julia 1.12 to install into, you set a few environment variables
@@ -32,6 +34,11 @@ the one way any of this can break something of yours.
 **[Conda](#conda)** builds a separate environment with its own Python and Julia. Nothing of yours is touched, nothing is
 left for you to set afterwards, and the versions are the ones this was tested with. The cost is that your other Python
 and Julia packages are not visible inside it unless you add them there too.
+
+**[Docker](#docker)** goes further and isolates the operating system as well, so it runs identically wherever it runs.
+The cost is that nothing of yours is inside it: your data has to be mounted, your tools are absent unless added to the
+image, and you need a container runtime you are permitted to use, which on a shared cluster you often are not. Choose it
+to run the vignette rather than to work alongside it.
 
 ## Conda
 
@@ -66,6 +73,46 @@ There is one case where you do have something to do, and the setup script says s
 C++ runtime is older than Julia's, it ends by telling you to run `conda activate metacells-sharpening` once more. Do
 that once and you are done — every later activation carries everything, as above.
 
+## Docker
+
+You need a container runtime and permission to use it, which on a shared machine you often do not have.
+
+```
+git clone https://github.com/tanaylab/metacells-sharpening-vignette
+cd metacells-sharpening-vignette
+docker build -t metacells-sharpening .
+```
+
+Unlike the other two, this one wants the repository, because a `Dockerfile` is a file rather than something you can
+pipe. `.dockerignore` then narrows what the build can see to the two files it copies, so nothing else in the repository
+can drift into the image without being asked for.
+
+The image *is* the [Conda](#conda) install: the same environment file, the same setup script, run at build time. The two
+therefore hold the same thing because they were built the same way, rather than because anyone keeps two descriptions in
+step. It takes a few minutes and produces about 4 GB, every Julia package compiled inside it, in exchange for never
+compiling anything again on any machine that can run it.
+
+The base image is pinned by digest rather than by tag, since the point of this way of installing is that the image is
+the one that was tested and a tag is repointed at will. It is the digest of the multi-architecture manifest, not of one
+image, so this still builds on arm64.
+
+The notebook is deliberately *not* in the image. The image is the environment; what you run in it is yours to mount:
+
+```
+docker run --rm -p 8888:8888 -v "$PWD:/work" -w /work metacells-sharpening
+```
+
+That publishes Jupyter on port 8888 and puts the current directory — the vignette, or your own data — at `/work`.
+`ENTRYPOINT` is `conda run` in the environment, so anything else you ask for arrives with the environment already set
+up:
+
+```
+docker run --rm -v "$PWD:/work" -w /work metacells-sharpening python -c 'import metacellspy; print(metacellspy.__version__)'
+```
+
+`docker exec` into a running container is the one thing that does not, since it bypasses the entry point and so starts
+outside the environment.
+
 ## Current env
 
 ### Before you start
@@ -81,8 +128,6 @@ that once and you are done — every later activation carries everything, as abo
   ```
 
 * **Python 3.10 or later**, the one your Jupyter runs.
-
-* **git**, because none of the packages is installed from a package index.
 
 ### Installing
 
@@ -150,7 +195,8 @@ otherwise, and forever if it is not positive.
 
 ## Check that it worked
 
-Either way — with the conda environment active, or in a shell which has the variables:
+Whichever way — with the conda environment active, in a shell which has the variables, or after `docker run --rm
+metacells-sharpening`:
 
 ```
 python -c '

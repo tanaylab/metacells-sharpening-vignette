@@ -16,9 +16,10 @@ network access to view:
 
 ## Installing it
 
-See [INSTALL.md](INSTALL.md). It describes two ways of installing — into the Python and Julia you already use, or into a
-conda environment which brings its own — and which to choose. Eight packages are involved, three Python and five Julia,
-and no package index carries a working version of any of them, which is why installing is a document of its own.
+See [INSTALL.md](INSTALL.md). It describes three ways of installing — into the Python and Julia you already use, into a
+conda environment which brings its own, or into a Docker image which brings the operating system as well — and which to
+choose. Eight packages are involved, three Python and five Julia, and no package index carries a working version of any
+of them, which is why installing is a document of its own.
 
 ## Downloading the data
 

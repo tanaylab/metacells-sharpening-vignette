@@ -15,11 +15,6 @@ FROM condaforge/miniforge3@sha256:532f6ee7a858b009dc895f8313eb6ed875f05a455ec57d
 # Activating a conda environment inside a `RUN` needs a shell that can source the activation script.
 SHELL ["/bin/bash", "-c"]
 
-# `git` because none of the packages is installed from a package index.
-RUN apt-get update \
- && apt-get install --no-install-recommends --yes git \
- && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /opt/metacells-sharpening
 COPY metacells-sharpening-conda-environment.yml metacells-sharpening-setup-environment.sh ./
 
