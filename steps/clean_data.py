@@ -17,7 +17,6 @@ EMPTY_VALUES = {
     "metacell": ("Outliers",),
     "type": ("Outliers", "Doublet"),
     "projected_type": ("(Missing)",),
-    "cell": ("NA",),
     "coordinates": ("NA",),
     "source": ("NA",),
 }
