@@ -39,6 +39,11 @@ EXECUTE_IN = conda run --no-capture-output --name metacells-sharpening
 # The notebook these steps are the code of.
 NOTEBOOK = sharpening.ipynb
 
+# Which Python runs the scripts which put the code into the notebook and check that it is there.
+# The top level `Makefile` passes the one of the document tool chain; on its own, whatever is in
+# the path will do, since neither script needs anything beyond the standard library.
+PYTHON = python3
+
 .DEFAULT_GOAL := all
 
 # Each step depends on the step before it, so editing an early one re-runs everything after it. The
@@ -71,11 +76,11 @@ list:  ## say which steps there are, in the order they run
 # own metadata, so the two are checked against each other by name rather than by position.
 .PHONY: embed
 embed:  ## put the code of each step into the notebook cell which names it
-	cd $(ROOT) && python3 scripts/embed_steps.py $(NOTEBOOK) $(STEP_NAMES)
+	cd $(ROOT) && $(PYTHON) scripts/embed_steps.py $(NOTEBOOK) $(STEP_NAMES)
 
 .PHONY: check
 check:  ## check the notebook holds the code of each step
-	cd $(ROOT) && python3 scripts/embed_steps.py --check $(NOTEBOOK) $(STEP_NAMES)
+	cd $(ROOT) && $(PYTHON) scripts/embed_steps.py --check $(NOTEBOOK) $(STEP_NAMES)
 
 .PHONY: clean
 clean:  ## forget that anything ran, without touching what the steps wrote

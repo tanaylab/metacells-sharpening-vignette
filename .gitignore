@@ -11,3 +11,6 @@ docs
 
 # Which steps have run, which is true of this machine rather than of the repository.
 steps/.stamp
+
+# The document tool chain, built by `make ci_env` out of the pinned `requirements.txt`.
+.ci_env
