@@ -8,10 +8,6 @@ import metacellspy as mc
 # `is_something`, and a `something_umis` as `something_UMIs`. Naming a property here overrides that
 # for it alone, so the rest of the import is unaffected.
 COPY_DATA = {
-    # Which metacell each cell belongs to. This is what the pipeline sharpens rather than computes,
-    # and it is the one property the importer skips by default, since it usually comes from a
-    # separate metacells file. Here the cells are the only place it exists, so we ask for it.
-    ("cell", "metacell_name"): ("metacell", None),
     # The type of each cell. **Specify this whenever the data has a type per cell**: the type axis is
     # built from a vector called `type`, and the column holding it is rarely called that. Leave it
     # out and everything still runs, with no types and uncolored graphs.
@@ -74,7 +70,10 @@ COPY_DATA = {
 
 cells = dp.files_daf("dafs/cells", "w", name="cells")
 
-mc.import_cells_h5ad(cells, cells_h5ad="input/assigned_cells.h5ad", copy_data=COPY_DATA)
+# Which metacell each cell belongs to is not imported - it is one analysis of these cells rather than a fact about
+# them, and every sharpening round produces another - but the importer has the file open, so it hands it back rather
+# than making the next cell read it again. That cell is where it goes, into the repository of the round it answers.
+base_metacell_per_cell = mc.import_cells_h5ad(cells, cells_h5ad="input/assigned_cells.h5ad", copy_data=COPY_DATA)
 
 # The total UMIs of a cell look like data and are not: they are the sum of the UMIs already imported. An `h5ad` which
 # happens to carry them is imported with them and is left alone; this one does not, so they are computed here, once,

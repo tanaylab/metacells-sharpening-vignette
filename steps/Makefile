@@ -28,7 +28,10 @@ STEP_NAMES = \
     import_cells \
     clean_data \
     reconstruct_axes \
-    base_metacells
+    base_metacells \
+    gene_masks \
+    analyze_metacells \
+    sharpen_metacells
 
 STAMP_FILES = $(patsubst %, .stamp/%, $(STEP_NAMES))
 

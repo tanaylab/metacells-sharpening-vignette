@@ -14,7 +14,6 @@ cells = dp.files_daf("dafs/cells", "r+", name="cells")
 # value: a property still saying `NA` would put `NA` on the axis, sitting among the real entries.
 EMPTY_VALUES = {
     "embryo": ("NA",),
-    "metacell": ("Outliers",),
     "type": ("Outliers", "Doublet"),
     "projected_type": ("(Missing)",),
     "coordinates": ("NA",),
