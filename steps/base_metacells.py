@@ -51,12 +51,11 @@ dp.reconstruct_axis(
     base_metacells, existing_axis="cell", implicit_axis="metacell", implicit_properties=set()
 )
 
-# What the cells say about their metacells: how many cells each has, their UMIs, and the fraction of
-# each gene in each of them. Then the marker genes - the ones which distinguish between metacells.
+# What the cells say about their metacells: how many cells each has, their UMIs, the fraction of each
+# gene in each of them, and the marker genes - the ones which distinguish between metacells.
 #
-# Neither depends on the gene masks, which is why they are here rather than in each analysis: this
+# None of it depends on the gene masks, which is why it is here rather than in each analysis: this
 # repository is shared by all of them.
 mc.prepare_metacells(base_metacells)
-mc.prepare_markers(base_metacells)
 
 print(base_metacells.description())

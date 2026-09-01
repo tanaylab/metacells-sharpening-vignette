@@ -39,11 +39,10 @@ for sharpening_round in range(1, SHARPENING_ROUNDS + 1):
         sharpening_round=sharpening_round,
     )
 
-    # The same three steps the metacells we started from went through, now that this round has said which cells are
-    # which metacell: aggregate the cells into them, find the genes which tell them apart, and work out what they say
+    # The same two steps the metacells we started from went through, now that this round has said which cells are which
+    # metacell: aggregate the cells into them along with the genes which tell them apart, and work out what they say
     # about the manifold. That last is what the next round reads.
     mc.prepare_metacells(sharpened)
-    mc.prepare_markers(sharpened)
     mc.analyze_metacells(
         sharpened,
         prefix=chr(ord("B") + sharpening_round),
