@@ -18,6 +18,24 @@ import somegraphspy as sg
 # it runs, and so that reading it shows what running it shows.
 os.environ["JULIA_DEBUG"] = "mcs_results"
 
+# One line per message, rather than Julia's default of a box with the source location under it.
+# Each message says when it was emitted and on which thread, which is worth having while it runs.
+dp.setup_logger()
+
+# The seed every computation which makes random choices is given. Clustering metacells is one of
+# them, so without a seed two runs of this notebook place cells in different metacells and every
+# number below them differs a little. Any non-zero value will do; what matters is that it is fixed
+# and that it is passed, since zero means "use Julia's own generator" - which is to say, do not
+# reproduce.
+RNG_SEED = 123456
+
+# The global generators are seeded with it as well. Everything below passes `RNG_SEED` explicitly,
+# which is what makes the results reproducible; this is only so that anything which draws without
+# being given a generator still starts from a known place instead of from the clock.
+np.random.seed(RNG_SEED)
+mc.jl.seval("using Random")
+mc.jl.Random.seed_b(RNG_SEED)
+
 print("dafpy", dp.__version__)
 print("somegraphspy", sg.__version__)
 print("metacellspy", mc.__version__)

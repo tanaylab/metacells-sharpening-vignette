@@ -31,7 +31,10 @@ STEP_NAMES = \
     base_metacells \
     gene_masks \
     analyze_metacells \
-    sharpen_metacells
+    qc_metacells \
+    sharpen_metacells \
+    tweak_gene_masks \
+    iterate_metacells
 
 STAMP_FILES = $(patsubst %, .stamp/%, $(STEP_NAMES))
 

@@ -59,3 +59,7 @@ dp.reconstruct_axis(
 mc.prepare_metacells(base_metacells)
 
 print(base_metacells.description())
+
+# These are complete. From here on they are only read: every iteration's first metacells rest on
+# them.
+base_metacells = base_metacells.read_only()

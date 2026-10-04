@@ -32,3 +32,6 @@ mc.fetch_gmara_vector_of_is_regulator_per_gene(masks, species="mouse")
 mc.fetch_gmara_vector_of_is_transcription_factor_per_gene(masks, species="mouse")
 
 print(masks.description())
+
+# These are complete. A later iteration rests its own masks on them rather than change them.
+masks = masks.read_only()

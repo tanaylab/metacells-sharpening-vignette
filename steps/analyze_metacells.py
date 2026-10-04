@@ -1,6 +1,9 @@
-# The context the notebook has by this point: the packages, the base metacells, and this iteration's gene masks.
+# The context the notebook has by this point: the packages, the seed, the base metacells, and this iteration's gene
+# masks.
 import dafpy as dp
 import metacellspy as mc
+
+RNG_SEED = 123456
 
 base_metacells = dp.complete_daf("dafs/metacells.base", name="metacells.base")
 masks = dp.complete_daf("dafs/masks.I0", name="masks.I0")
@@ -24,6 +27,6 @@ metacells = dp.complete_chain(
 # of each block. This is what sharpening reads, so it is also what has to be recomputed after each round of it.
 #
 # `module_status` records why each gene ended up in the module it did, which is worth having while reading a result.
-mc.analyze_metacells(metacells, module_status=True)
+mc.analyze_metacells(metacells, module_status=True, rng=RNG_SEED)
 
 print(metacells.description())

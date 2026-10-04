@@ -9,12 +9,17 @@ rewording a paragraph regenerates the documents without recomputing anything.
 Executing is done in place, so the outputs are replaced while the prose around them stays as it is
 now rather than as it was when the pipeline last ran.
 
+The log messages in the outputs are normalized before they are written. Each message says when it
+was emitted and on which thread, and neither is the same in two runs. The committed outputs keep
+the messages and drop those details, so that running again changes only what the code changed.
+
 With `--check` nothing is executed and nothing is written: it only reports the notebooks whose
 outputs no longer describe their code, which is what the CI server can ask, having neither the
 input data nor a way to run the pipeline.
 """
 
 import json
+import re
 import subprocess
 import sys
 from hashlib import sha256
@@ -35,6 +40,13 @@ FINGERPRINT_KEY = "code_fingerprint"
 #: from the end of one cell to the start of the next changes the fingerprint.
 CELL_SEPARATOR = "\0"
 
+#: The start of a log message, as `setup_logger` writes it: the time, then the process, thread and
+#: task which emitted it. The process is there only with several processes, and the thread and task
+#: only with several threads. Only the first line of a message carries them.
+LOG_RUN_DETAILS = re.compile(
+    r"^([\[┌] )(?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}: )?(?:P\d+: )?(?:T\d+: K\d+: )?", re.MULTILINE
+)
+
 
 def code_fingerprint(notebook: Dict[str, Any]) -> str:
     """Compute the fingerprint of a notebook's code, which is its code cells and nothing else."""
@@ -53,6 +65,11 @@ def executed_fingerprint(notebook: Dict[str, Any]) -> Optional[str]:
     return notebook["metadata"].get(METADATA_KEY, {}).get(FINGERPRINT_KEY)
 
 
+def normalized_log(text: str) -> str:
+    """Drop from each log message in some output the details which differ from one run to the next."""
+    return LOG_RUN_DETAILS.sub(r"\1", text)
+
+
 def read(path: Path) -> Dict[str, Any]:
     """Read a notebook as the JSON it is, so that checking one needs nothing installed."""
     with open(path, encoding="utf-8") as file:
@@ -60,20 +77,24 @@ def read(path: Path) -> Dict[str, Any]:
 
 
 def execute(path: Path) -> None:
-    """Execute one notebook in place, and record the code it was executed with."""
+    """Execute one notebook in place, normalize its log messages, and record the code it was executed with."""
     subprocess.run(
         ["jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace", str(path)],
         check=True,
     )
 
     # Written through `nbformat` rather than through `json`, so that the file keeps the exact
-    # formatting every other tool writes it with and the change is the recorded fingerprint alone.
+    # formatting every other tool writes it with, and changes only where it is meant to.
     # Importing it here rather than at the top keeps checking a notebook free of it: this is the
     # one path which writes, and it runs where the notebook was just executed, so it is installed.
     import nbformat  # pylint: disable=import-outside-toplevel
 
     # Read again rather than reusing what was read before, because executing rewrote the file.
     notebook = nbformat.read(path, as_version=4)
+    for cell in notebook.cells:
+        for output in cell.get("outputs", []):
+            if output.output_type == "stream":
+                output.text = normalized_log(output.text)
     notebook.metadata.setdefault(METADATA_KEY, {})[FINGERPRINT_KEY] = code_fingerprint(notebook)
     nbformat.write(notebook, path)
 
