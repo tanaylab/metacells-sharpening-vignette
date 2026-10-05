@@ -29,7 +29,49 @@ PYTHON_PACKAGES=(
     "dafpy @ https://github.com/tanaylab/dafpy/archive/refs/heads/main.tar.gz"
     "somegraphspy @ https://github.com/tanaylab/somegraphspy/archive/refs/heads/main.tar.gz"
     "metacellspy @ https://github.com/tanaylab/metacellspy/archive/refs/heads/main.tar.gz"
+    "metacellsgraphspy @ https://github.com/tanaylab/metacellsgraphspy/archive/refs/heads/main.tar.gz"
+    "metacellswidgets @ https://github.com/tanaylab/metacellswidgets/archive/refs/heads/main.tar.gz"
 )
+
+# The `metacells` package, which computes the metacells the sharpening starts from. It is only
+# installed when asked for, since it holds `pandas` below 3, and `pip` downgrades it to install it.
+METACELLS_PACKAGE="metacells @ https://github.com/tanaylab/metacells/archive/refs/heads/master.tar.gz"
+
+USAGE="Usage: $0 [--with-metacells] [--develop DIRECTORY]
+
+--with-metacells     Also install the metacells package.
+--develop DIRECTORY  Install the checkouts of the packages in the DIRECTORY instead. The Python
+                     packages are installed in editable mode, and the Julia packages are developed
+                     from their checkouts, so a change in a checkout is what the notebook runs. This
+                     is for working on the packages, not for using them."
+
+DEVELOP_DIRECTORY=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --with-metacells)
+        PYTHON_PACKAGES+=("$METACELLS_PACKAGE")
+        shift
+        ;;
+    --develop)
+        if [ $# -lt 2 ] || [ ! -d "$2" ]; then
+            echo "--develop needs an existing directory." >&2
+            echo "$USAGE" >&2
+            exit 1
+        fi
+        DEVELOP_DIRECTORY="$(cd "$2" && pwd)"
+        shift 2
+        ;;
+    --help)
+        echo "$USAGE"
+        exit 0
+        ;;
+    *)
+        echo "Unknown argument: $1" >&2
+        echo "$USAGE" >&2
+        exit 1
+        ;;
+    esac
+done
 
 IN_CONDA_ENVIRONMENT=false
 if [ -n "${METACELLS_SHARPENING_VIGNETTE:-}" ]; then
@@ -68,8 +110,21 @@ echo "Installing the Python packages:"
 # to its head, sees the version it already has, and keeps the old files. Only `--force-reinstall`
 # replaces them, and `--no-deps` keeps that from dragging everything else through a reinstall as
 # well - which is why the first command is still needed, to install those dependencies.
-pip install "${PYTHON_PACKAGES[@]}"
-pip install --force-reinstall --no-deps "${PYTHON_PACKAGES[@]}"
+if [ -z "$DEVELOP_DIRECTORY" ]; then
+    pip install "${PYTHON_PACKAGES[@]}"
+    pip install --force-reinstall --no-deps "${PYTHON_PACKAGES[@]}"
+else
+    # An editable install reads the files of the checkout, so it needs no forced reinstall. Each
+    # package's checkout is named after the package, which is the first word of its entry above.
+    # The `dev` extra of each brings the tools for working on it (tests, formatting, documentation).
+    EDITABLE_PACKAGES=()
+    for package in "${PYTHON_PACKAGES[@]}"; do
+        EDITABLE_PACKAGES+=(--editable "$DEVELOP_DIRECTORY/${package%% *}[dev]")
+    done
+    # In the `compat` mode an editable install is a plain path entry, which static tools such as
+    # `mypy` follow. The default mode is an import hook, which they do not.
+    pip install --config-settings editable_mode=compat "${EDITABLE_PACKAGES[@]}"
+fi
 
 # Jupyter is only installed in the conda environment: the point of installing into your own is that
 # you already have one.
@@ -122,23 +177,35 @@ using Pkg
 # devved it - and, if you are developing these, what you want the vignette to run against.
 developed = Set(info.name for (_, info) in Pkg.dependencies() if info.is_tracking_path)
 
+# The first argument is the `--develop` directory, or empty. With it, each of our packages (the ones
+# given by a URL) is developed from its `<name>.jl` checkout there, if there is one.
+develop_directory = ARGS[1]
+
+develop_specifications = Pkg.PackageSpec[]
 specifications = Pkg.PackageSpec[]
-for specification in ARGS
+for specification in ARGS[2:end]
     name_and_url = split(specification, "="; limit = 2)
     name = String(name_and_url[1])
+    checkout = joinpath(develop_directory, name * ".jl")
     if name in developed
         println("    keeping the version of ", name, " you are developing")
     elseif length(name_and_url) == 1
         push!(specifications, Pkg.PackageSpec(; name))
+    elseif !isempty(develop_directory) && isdir(checkout)
+        push!(develop_specifications, Pkg.PackageSpec(; path = checkout))
     else
         push!(specifications, Pkg.PackageSpec(; url = String(name_and_url[2])))
     end
 end
 
 # All of them in one call, so that `Pkg` resolves them together: added one at a time, a package would
-# have to come after everything it depends on, and nothing here knows that order.
+# have to come after everything it depends on, and nothing here knows that order. The developed ones
+# go first, so that adding the rest finds them already there.
+if !isempty(develop_specifications)
+    Pkg.develop(develop_specifications)
+end
 Pkg.add(specifications)
-' "${JULIA_PACKAGES[@]}"
+' "$DEVELOP_DIRECTORY" "${JULIA_PACKAGES[@]}"
 
 # Installing is not the same as compiling. Whatever is not compiled here is compiled by the first
 # `import metacellspy`, in the middle of using the notebook.

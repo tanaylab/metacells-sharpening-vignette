@@ -10,9 +10,9 @@
 # installed is then wrong.
 #
 # Nothing beyond the vignette's own needs is installed. `pip install` whatever else you want to work
-# with; in particular the `metacells` package, which computes the metacells the sharpening starts
-# from, holds `numpy` below 2 and `pandas` below 3, and there is no reason to impose that on someone
-# who does not want it.
+# with. The `metacells` package, which computes the metacells the sharpening starts from, holds
+# `pandas` below 3. There is no reason to impose that on someone who does not want it, so the setup
+# script installs it only when given `--with-metacells`.
 #
 # Julia is pinned to 1.12, which `Metacells.jl` requires, and to a patch level rather than to the
 # latest 1.12, so that everyone creating this environment gets the same one.

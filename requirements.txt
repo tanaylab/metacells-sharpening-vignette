@@ -3,7 +3,7 @@
 # `pygments` renders a cell magic as one token and the next renders it as two, and the generated
 # bytes are what the CI server compares.
 #
-# This is *not* what the vignette itself needs. Those eight packages are installed by
+# This is *not* what the vignette itself needs. Those eleven packages are installed by
 # `metacells-sharpening-setup-environment.sh`, from the head of each repository, and none of them is
 # here: generating the documents converts a notebook which was executed elsewhere, so it needs
 # neither the packages nor the Julia they talk to nor the input data. `make run` is the one target

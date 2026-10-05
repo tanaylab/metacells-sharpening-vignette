@@ -1,12 +1,12 @@
 # Installing
 
-The vignette runs Python code which invokes Julia code. Eight packages make that work — three Python, five Julia — and
-no package index carries a working version of any of them, so all eight are installed from the head of their repository.
+The vignette runs Python code which invokes Julia code. Eleven packages make that work: five Python and six Julia. No
+package index carries a working version of any of them, so all eleven are installed from the head of their repository.
 That is why installing is a document of its own rather than a cell in the notebook.
 
-Only those eight are installed, plus `juliacall`, which lets Python invoke Julia. Anything else you want to work with is
-yours to add — in particular the `metacells` package, which computes the metacells this pipeline sharpens, and which
-holds `numpy` below 2 and `pandas` below 3.
+Only those eleven are installed, plus `juliacall`, which lets Python invoke Julia. Anything else you want to work with is
+yours to add. The setup script can also install the `metacells` package, which computes the metacells this pipeline
+sharpens. See [Options](#options).
 
 ## Which of these to use
 
@@ -127,7 +127,7 @@ outside the environment.
   julia --version
   ```
 
-* **Python 3.10 or later**, the one your Jupyter runs.
+* **Python 3.11 or later**, the one your Jupyter runs.
 
 ### Installing
 
@@ -142,13 +142,37 @@ chmod +x metacells-sharpening-setup-environment.sh
 Run it with the `python3` of the Jupyter you use first in your path: a notebook runs in a kernel, and the kernel is the
 Python that Jupyter itself runs in.
 
-It installs `dafpy` (the data layer), `somegraphspy` (the graphs) and `metacellspy` (the computations), adds the five
-Julia packages to your default Julia environment, compiles them, and checks that Python can reach Julia — so a conflict
-surfaces now rather than in a notebook cell. Running it again is how you move to a newer head of each repository.
+It installs five Python packages:
+- `dafpy`, the data layer;
+- `somegraphspy`, generic graphs;
+- `metacellspy`, the computations;
+- `metacellsgraphspy`, the metacells graphs;
+- `metacellswidgets`, interactive graphs in Jupyter.
+
+It adds the six Julia packages to your default Julia environment, and compiles them. Then it checks that Python can reach
+Julia, so a conflict surfaces now rather than in a notebook cell. Running it again is how you move to a newer head of
+each repository.
 
 It then prints the environment variables to set. They are not optional: without them `juliacall` installs a second Julia
 of its own and runs against that instead of against what you just installed. See [The environment
 variables](#the-environment-variables) for what each does.
+
+## Options
+
+The setup script takes these options, in any of the ways of installing. It rejects any other argument.
+
+`--with-metacells` also installs the `metacells` package, from the head of its repository. That package holds `pandas`
+below 3, so `pip` downgrades it to install it. This is why it is not installed by default. You can also add it later:
+run the script again with this option.
+
+`--develop DIRECTORY` installs the checkouts in the `DIRECTORY` instead of the heads of the repositories. Each Python
+package is installed in editable mode from `DIRECTORY/<package>`, with its `dev` extra, which brings the tools for
+working on it. Each of our Julia packages is developed from `DIRECTORY/<Package>.jl`, when that exists. So a change in a
+checkout is what the notebook runs. This is for working on the packages, not for using them. For example:
+
+```
+./metacells-sharpening-setup-environment.sh --develop ~/src
+```
 
 ## The environment variables
 

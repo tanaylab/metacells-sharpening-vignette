@@ -18,7 +18,7 @@ network access to view:
 
 See [INSTALL.md](INSTALL.md). It describes three ways of installing — into the Python and Julia you already use, into a
 conda environment which brings its own, or into a Docker image which brings the operating system as well — and which to
-choose. Eight packages are involved, three Python and five Julia, and no package index carries a working version of any
+choose. Eleven packages are involved, five Python and six Julia, and no package index carries a working version of any
 of them, which is why installing is a document of its own.
 
 ## Downloading the data
@@ -60,7 +60,7 @@ paragraph regenerates the documents without recomputing anything. Executing is d
 replaced while the prose around them stays as it is.
 
 Only `make run` needs the vignette's own environment. Generating the documents is a separate tool chain, pinned in
-`requirements.txt`, and needs neither the eight packages nor the Julia they talk to nor the input data — the notebook is
+`requirements.txt`, and needs neither the eleven packages nor the Julia they talk to nor the input data — the notebook is
 committed with its outputs, and converting it is all that happens. `EXECUTE_IN` is how the vignette's environment is
 entered, and defaults to the conda install:
 
