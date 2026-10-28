@@ -147,7 +147,8 @@ fi
 #
 # Each package is named as `name` when it is in the General registry, and as `name=url` when it is
 # not - which is the four of ours that are not registered, plus `DataAxesFormats`, which is there
-# only at a version `Metacells` will not accept.
+# only at a version `Metacells` will not accept. A package in a directory of its repository is named
+# as `name=url#subdir` - which is the Julia package each of our Python packages ships inside itself.
 JULIA_PACKAGES=($(python3 -c '
 import contextlib
 import sys
@@ -160,8 +161,18 @@ with contextlib.redirect_stdout(sys.stderr):
     _, specifications = juliapkg.deps.find_requirements()
 
 for specification in sorted(specifications, key = lambda specification: specification.name):
-    print(specification.name if specification.url is None else f"{specification.name}={specification.url}")
+    if specification.url is None:
+        print(specification.name)
+    elif specification.subdir is None:
+        print(f"{specification.name}={specification.url}")
+    else:
+        print(f"{specification.name}={specification.url}#{specification.subdir}")
 '))
+
+# Compiling a Julia package which ships inside one of our Python packages runs that Python package,
+# through `PythonCall`. So `PythonCall` must run the Python of this environment, where they are
+# installed. Otherwise it uses a Python which `CondaPkg` makes for itself.
+export JULIA_PYTHONCALL_EXE="$(python3 -c 'import sys; print(sys.executable)')"
 
 # The conda `julia` package names an environment after the conda environment, and points the depot
 # inside it, which is what makes the Julia packages part of it: removing the conda environment
@@ -178,7 +189,9 @@ using Pkg
 developed = Set(info.name for (_, info) in Pkg.dependencies() if info.is_tracking_path)
 
 # The first argument is the `--develop` directory, or empty. With it, each of our packages (the ones
-# given by a URL) is developed from its `<name>.jl` checkout there, if there is one.
+# given by a URL) is developed from its checkout there, if there is one. That is the `<name>.jl`
+# checkout of a Julia package, and the directory inside the checkout of its repository for a package
+# in a directory of one (the repository named by the end of its URL, e.g. `dafpy`).
 develop_directory = ARGS[1]
 
 develop_specifications = Pkg.PackageSpec[]
@@ -186,15 +199,22 @@ specifications = Pkg.PackageSpec[]
 for specification in ARGS[2:end]
     name_and_url = split(specification, "="; limit = 2)
     name = String(name_and_url[1])
-    checkout = joinpath(develop_directory, name * ".jl")
+    url_and_subdir = length(name_and_url) == 1 ? String[] : split(name_and_url[2], "#"; limit = 2)
+    url = isempty(url_and_subdir) ? nothing : String(url_and_subdir[1])
+    subdir = length(url_and_subdir) == 2 ? String(url_and_subdir[2]) : nothing
+    if subdir === nothing
+        checkout = joinpath(develop_directory, name * ".jl")
+    else
+        checkout = joinpath(develop_directory, replace(basename(url), r"\.git$" => ""), subdir)
+    end
     if name in developed
         println("    keeping the version of ", name, " you are developing")
-    elseif length(name_and_url) == 1
+    elseif url === nothing
         push!(specifications, Pkg.PackageSpec(; name))
     elseif !isempty(develop_directory) && isdir(checkout)
         push!(develop_specifications, Pkg.PackageSpec(; path = checkout))
     else
-        push!(specifications, Pkg.PackageSpec(; url = String(name_and_url[2])))
+        push!(specifications, Pkg.PackageSpec(; url, subdir))
     end
 end
 
